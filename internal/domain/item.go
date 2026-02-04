@@ -4,6 +4,10 @@ type ItemID string
 
 type ItemName string
 
+type Comparer[T any] interface {
+	Equal(other T) bool
+}
+
 type Item struct {
 	ID        ItemID
 	Name      ItemName
@@ -13,30 +17,34 @@ type Item struct {
 	Content   []ItemID
 }
 
-func NewItem(path ItemID, name ItemName, extension string, isFolder bool, size int64) *Item {
+func NewItem(id ItemID, name ItemName, extension string, isFolder bool, size int64) *Item {
+	if id == "" || name == "" {
+		panic("invalid item creation")
+	}
 	item := Item{
-		ID:        path,
-		Name:      name,
-		Extension: extension,
-		IsFolder:  isFolder,
-		Size:      size,
+		ID:       id,
+		Name:     name,
+		IsFolder: isFolder,
+		Size:     size,
 	}
 	if isFolder {
 		item.Content = make([]ItemID, 0)
 	} else {
+		item.Extension = extension
 		item.Content = nil
 	}
 
 	return &item
 }
 
-func (i Item) Equals(other Item) bool {
-	return i.Name == other.Name && i.Size == other.Size &&
-		i.Extension == other.Extension && i.IsFolder == other.IsFolder
+func (i Item) Equal(other Item) bool {
+	return i.ID == other.ID && i.Same(other)
 }
 
 func (i Item) Same(other Item) bool {
-	return i.Name == other.Name
+	return i.Name == other.Name &&
+		i.Size == other.Size && i.Extension == other.Extension &&
+		i.IsFolder == other.IsFolder
 }
 
 func getNameFromPath(path string) string {

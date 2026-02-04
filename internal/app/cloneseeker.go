@@ -1,116 +1,94 @@
 package app
 
 import (
+	"cloneslasher/internal/adapters/handler"
 	"cloneslasher/internal/domain"
 	"cloneslasher/internal/ports"
 	"fmt"
-	"io/fs"
-	"log"
-	"os"
-	"path/filepath"
 )
 
 type CloneSeeker struct {
-	fileRepo   ports.ItemRepository
-	folderRepo ports.ItemRepository
+	itemRepo    ports.ItemRepository
+	fileHandler *handler.FileHandler
 }
 
-func NewCloneSeeker(fileRepo, folderRepo ports.ItemRepository) *CloneSeeker {
-	return &CloneSeeker{fileRepo: fileRepo, folderRepo: folderRepo}
+func NewCloneSeeker(
+	itemRepo ports.ItemRepository,
+	fileHandler *handler.FileHandler,
+) *CloneSeeker {
+	return &CloneSeeker{itemRepo: itemRepo, fileHandler: fileHandler}
 }
 
 // Process scans the given directories paths and stores files and folders in the repository, returning a slice of Items found.
 func (cs *CloneSeeker) Process(paths ...string) error {
-	for _, path := range paths {
-		err := filepath.WalkDir(path,
-			func(pathArg string, dirArg fs.DirEntry, errArg error) error {
-				if errArg != nil {
-					fmt.Printf("preventing walk through %s: %v\n", pathArg, errArg)
-					return errArg
-				}
-
-				// Process the file or directory
-				stat, errArg := os.Stat(pathArg)
-				if errArg != nil {
-					fmt.Printf("error getting stat for directory %s: %v\n", pathArg, errArg)
-					return errArg
-				}
-
-				if stat.IsDir() {
-					folderItem := domain.NewFolder(pathArg, stat.Name(), stat.Size(), nil)
-					cs.folderRepo.AddItem(*folderItem)
-				} else {
-					fileItem := domain.NewFile(pathArg, stat.Name(), stat.Size(), filepath.Ext(pathArg))
-					cs.fileRepo.AddItem(*fileItem)
-				}
-
-				return errArg
-			})
-
+	cs.fileHandler.AddHandleFunc(func(item domain.Item) {
+		err := cs.itemRepo.AddItem(item)
 		if err != nil {
-			log.Fatalf("error walking the path %s: %v\n", path, err)
-			return err
+			fmt.Println("error add item" + err.Error())
 		}
-
-	}
-	return nil
+	})
+	return cs.fileHandler.Process(paths...)
 }
 
-func (cs *CloneSeeker) GetFoldersNamesakes() map[string][]domain.Item {
-	var res map[string][]domain.Item = make(map[string][]domain.Item)
+type ItemNamesakes struct {
+	Name      domain.ItemName
+	Namesakes []domain.Item
+}
 
-	for _, name := range cs.folderRepo.GetNames() {
-		namesakes, ok := cs.folderRepo.GetByName(name)
+func (cs *CloneSeeker) GetItemNamesakes() []ItemNamesakes {
+	var res []ItemNamesakes = make([]ItemNamesakes, 0)
+
+	for _, name := range cs.itemRepo.GetNames() {
+		namesakes, ok := cs.itemRepo.GetByName(name)
 		if !ok {
 			fmt.Println("didnt find folder namesakes")
 		}
 
 		if len(namesakes) > 1 {
-			res[name] = namesakes
+			res = append(res, ItemNamesakes{
+				Name:      name,
+				Namesakes: namesakes,
+			})
 		}
 	}
 
 	return res
 }
 
-// type ItemClones struct {
-// 	Path      string
-// 	Name      string
-// 	Size      int64
-// 	Extension string
-// 	IsFolder  bool
-// 	Content   []string
-// 	Clones    []string
-// }
+type ItemClones struct {
+	Item   domain.Item
+	Clones []domain.Item
+}
 
-// TODO: fix the problem: create some struct here to output data. (ItemClones) and some field `clones []string`
-// func (cs *CloneSeeker) GetFolderClones() []ItemClones {
-// 	var res []ItemClones = make([]ItemClones, 0)
+func (cs *CloneSeeker) GetItemClones() []ItemClones {
+	var res []ItemClones = make([]ItemClones, 0)
 
-// 	names := cs.folderRepo.GetNames()
-// 	for _, name := range names {
-// 		folders, err := cs.folderRepo.GetByName(name)
-// 		if err != nil {
-// 			panic(err)
-// 		}
+	names := cs.itemRepo.GetNames()
+	for _, name := range names {
+		namesakes, ok := cs.itemRepo.GetByName(name)
 
-// 		if len(folders) > 1 {
-// 			exactFoldersClones := findExactClones(folders...)
-// 			for path, itemClones := range exactFoldersClones {
+		if ok && len(namesakes) > 0 {
+			folderClones := findClones(namesakes...)
+			for path, itemClones := range folderClones {
+				item, ok := cs.itemRepo.GetByID(domain.ItemID(path))
+				if !ok {
+					fmt.Println("warning: didnt find item by path: " + path)
+				}
+				res = append(res, ItemClones{
+					Item:   item,
+					Clones: itemClones,
+				})
+			}
+		} else {
+			fmt.Println("warning: didnt folders namesakes by name: " + name)
+		}
+	}
 
-// 				item, ok := cs.folderRepo.GetByPath(path)
-// 				if !ok {
-// 					fmt.Println("warning: didnt find item by path: " + path)
-// 				}
-// 			}
-// 		}
-// 	}
+	return res
+}
 
-// 	return res
-// }
-
-func findExactClones(values ...domain.Item) map[string][]domain.Item {
-	res := make(map[string][]domain.Item)
+func findClones(values ...domain.Item) map[domain.ItemID][]domain.Item {
+	res := make(map[domain.ItemID][]domain.Item)
 
 	var target domain.Item
 	i := 0
@@ -123,16 +101,13 @@ func findExactClones(values ...domain.Item) map[string][]domain.Item {
 		if i == 0 {
 			target = item
 			continue
-		} else if target.Equals(values[i]) {
-			clones, ok := res[target.Path]
+		} else if target.Same(values[i]) {
+			_, ok := res[target.ID]
 			if !ok {
-				clones = make([]domain.Item, 2)
-				clones[0] = target
-				clones[1] = item
-				res[target.Path] = clones
-			} else {
-				res[target.Path] = append(res[target.Path], item)
+				res[target.ID] = make([]domain.Item, 2)
 			}
+			res[target.ID] = append(res[target.ID], item)
+
 			continue
 		}
 
@@ -144,23 +119,6 @@ func findExactClones(values ...domain.Item) map[string][]domain.Item {
 		} else {
 			i++
 		}
-	}
-
-	return res
-}
-
-func (cs *CloneSeeker) FileClones() map[string][]domain.Item {
-	var res map[string][]domain.Item = make(map[string][]domain.Item)
-
-	keys := cs.fileRepo.GetNames()
-
-	for _, k := range keys {
-		files, ok := cs.fileRepo.GetByName(k)
-		if !ok {
-			fmt.Println("didnt find clones for file name:" + k)
-			continue
-		}
-		res[k] = files
 	}
 
 	return res
