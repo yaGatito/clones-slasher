@@ -6,20 +6,13 @@ import (
 	"sync"
 )
 
-type Item struct {
-	Path      string
-	Name      string
-	Size      int64
-	Extension string
-	IsFolder  bool
-}
-
 // ItemStorage name oriented memory storage.
 type ItemStorage struct {
 	nameLoke          sync.RWMutex
-	nameOrientedStore map[string][]domain.Item
+	nameOrientedStore map[domain.ItemName][]domain.ItemID
+
 	pathLoke          sync.RWMutex
-	pathOrientedStore map[string]Item
+	pathOrientedStore map[domain.ItemID]domain.Item
 }
 
 var _ ports.ItemRepository = (*ItemStorage)(nil)
@@ -27,86 +20,69 @@ var _ ports.ItemRepository = (*ItemStorage)(nil)
 func NewItemStorage() *ItemStorage {
 	return &ItemStorage{
 		nameLoke:          sync.RWMutex{},
-		nameOrientedStore: make(map[string][]domain.Item),
+		nameOrientedStore: make(map[domain.ItemName][]domain.ItemID),
+
 		pathLoke:          sync.RWMutex{},
-		pathOrientedStore: make(map[string]Item),
+		pathOrientedStore: make(map[domain.ItemID]domain.Item),
 	}
 }
 
-func (is *ItemStorage) AddItem(item domain.Item) {
-	is.pathLoke.RLock()
-	is.pathOrientedStore[item.Path] = mapDomainToItem(item)
-	is.pathLoke.RUnlock()
-
-	is.nameLoke.RLock()
-	items, exists := is.nameOrientedStore[item.Name]
-	is.nameLoke.RUnlock()
-
-	is.nameLoke.Lock()
-	if exists {
-		is.nameOrientedStore[item.Name] = append(items, item)
+func (s *ItemStorage) AddItem(item domain.Item) {
+	s.pathLoke.RLock()
+	_, ok := s.pathOrientedStore[item.ID]
+	if ok {
+		panic("adding existed item")
 	} else {
-		items = make([]domain.Item, 1)
-		items[0] = item
-		is.nameOrientedStore[item.Name] = items
+		s.pathOrientedStore[item.ID] = item
 	}
-	is.nameLoke.Unlock()
+	s.pathLoke.RUnlock()
+
+	s.nameLoke.Lock()
+	namesakesIDs, ok := s.nameOrientedStore[item.Name]
+	if ok {
+		s.nameOrientedStore[item.Name] = append(namesakesIDs, item.ID)
+	} else {
+		namesakesIDs = make([]domain.ItemID, 0)
+		namesakesIDs = append(namesakesIDs, item.ID)
+		s.nameOrientedStore[item.Name] = namesakesIDs
+	}
+	s.nameLoke.Unlock()
 }
 
-func (is *ItemStorage) GetByName(itemName string) ([]domain.Item, bool) {
-	is.nameLoke.RLock()
-	defer is.nameLoke.RUnlock()
+func (s *ItemStorage) GetByName(itemName domain.ItemName) ([]domain.ItemID, bool) {
+	s.nameLoke.RLock()
+	defer s.nameLoke.RUnlock()
 
-	items, exists := is.nameOrientedStore[itemName]
+	items, exists := s.nameOrientedStore[itemName]
 	return items, exists
 }
 
-func (is *ItemStorage) GetByPath(itemPath string) (domain.Item, bool) {
-	is.pathLoke.RLock()
-	defer is.pathLoke.RUnlock()
+func (s *ItemStorage) GetByID(itemPath domain.ItemID) (domain.Item, bool) {
+	s.pathLoke.RLock()
+	defer s.pathLoke.RUnlock()
 
-	item, exists := is.pathOrientedStore[itemPath]
-	return mapItemToDomain(item), exists
+	item, exists := s.pathOrientedStore[itemPath]
+	return item, exists
 }
 
-func (is *ItemStorage) GetNames() []string {
-	is.nameLoke.RLock()
-	defer is.nameLoke.RUnlock()
+func (s *ItemStorage) GetNames() []domain.ItemName {
+	s.nameLoke.RLock()
+	defer s.nameLoke.RUnlock()
 
-	var names []string
-	for name := range is.nameOrientedStore {
+	var names []domain.ItemName
+	for name := range s.nameOrientedStore {
 		names = append(names, name)
 	}
 	return names
 }
 
-func (is *ItemStorage) GetPaths() []string {
-	is.nameLoke.RLock()
-	defer is.nameLoke.RUnlock()
+func (s *ItemStorage) GetIDs() []domain.ItemID {
+	s.nameLoke.RLock()
+	defer s.nameLoke.RUnlock()
 
-	var names []string
-	for name := range is.pathOrientedStore {
-		names = append(names, name)
+	var IDs []domain.ItemID
+	for ID := range s.pathOrientedStore {
+		IDs = append(IDs, ID)
 	}
-	return names
-}
-
-func mapDomainToItem(item domain.Item) Item {
-	return Item{
-		Path:      item.Path,
-		Name:      item.Name,
-		Size:      item.Size,
-		Extension: item.Extension,
-		IsFolder:  item.IsFolder,
-	}
-}
-
-func mapItemToDomain(item Item) domain.Item {
-	return domain.Item{
-		Path:      item.Path,
-		Name:      item.Name,
-		Size:      item.Size,
-		Extension: item.Extension,
-		IsFolder:  item.IsFolder,
-	}
+	return IDs
 }

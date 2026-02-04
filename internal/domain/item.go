@@ -1,33 +1,33 @@
 package domain
 
+type ItemID string
+
+type ItemName string
+
 type Item struct {
-	Path      string
-	Name      string
+	ID        ItemID
+	Name      ItemName
 	Size      int64
 	Extension string
 	IsFolder  bool
-	Content   []Item
+	Content   []ItemID
 }
 
-func NewFile(path, name string, size int64, extension string) *Item {
-	return &Item{
-		Path:      path,
+func NewItem(path ItemID, name ItemName, extension string, isFolder bool, size int64) *Item {
+	item := Item{
+		ID:        path,
 		Name:      name,
 		Extension: extension,
-		IsFolder:  false,
+		IsFolder:  isFolder,
 		Size:      size,
 	}
-}
+	if isFolder {
+		item.Content = make([]ItemID, 0)
+	} else {
+		item.Content = nil
+	}
 
-func NewFolder(path, name string, size int64, ptrs []Item) *Item {
-	return &Item{
-		Path:      path,
-		Name:      name,
-		Extension: "",
-		IsFolder:  true,
-		Size:      size,
-		Content:   ptrs,
-	}
+	return &item
 }
 
 func (i Item) Equals(other Item) bool {
