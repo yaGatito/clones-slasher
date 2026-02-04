@@ -5,6 +5,7 @@ import (
 	"cloneslasher/internal/domain"
 	"cloneslasher/internal/ports"
 	"fmt"
+	"slices"
 )
 
 type CloneSeeker struct {
@@ -91,35 +92,47 @@ func findClones(values ...domain.Item) map[domain.ItemID][]domain.Item {
 	res := make(map[domain.ItemID][]domain.Item)
 
 	var target domain.Item
-	i := 0
-	for {
+
+	for j := 0; j < len(values)-1; j++ {
 		if len(values) <= 1 {
 			break
 		}
 
-		item := values[i]
-		if i == 0 {
-			target = item
-			continue
-		} else if target.Same(values[i]) {
-			_, ok := res[target.ID]
-			if !ok {
-				res[target.ID] = make([]domain.Item, 2)
-			}
-			res[target.ID] = append(res[target.ID], item)
-
-			continue
-		}
-
-		// If hit last index
-		if i == (len(values) - 1) {
-			i = 0
-			values = values[1:]
-			continue
-		} else {
-			i++
+		target = values[0]
+		ix := slices.IndexFunc(values[j+1:], target.Same)
+		if ix >= 0 {
+			res[target.ID] = append(res[target.ID], values[ix])
 		}
 	}
+
+	// i := 0
+	// for {
+	// 	if len(values) <= 1 {
+	// 		break
+	// 	}
+
+	// 	if i == 0 {
+	// 		target = item
+	// 		continue
+	// 	} else if target.Same(values[i]) {
+	// 		_, ok := res[target.ID]
+	// 		if !ok {
+	// 			res[target.ID] = make([]domain.Item, 2)
+	// 		}
+	// 		res[target.ID] = append(res[target.ID], item)
+
+	// 		continue
+	// 	}
+
+	// 	// If hit last index
+	// 	if i == (len(values) - 1) {
+	// 		i = 0
+	// 		values = values[1:]
+	// 		continue
+	// 	} else {
+	// 		i++
+	// 	}
+	// }
 
 	return res
 }

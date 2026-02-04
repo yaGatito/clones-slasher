@@ -5,6 +5,7 @@ import (
 	"cloneslasher/internal/adapters/handler"
 	storage "cloneslasher/internal/adapters/memstorage"
 	"cloneslasher/internal/app"
+	"encoding/json"
 	"os"
 	"path/filepath"
 )
@@ -28,21 +29,26 @@ func run() {
 	}
 
 	// TODO: Content formation!!! Then it needs to be able to count size!!! by size the equality
-	namesakesRawData := cloneSeeker.GetItemNamesakes()
-
-	foldersRes := formatter.MapCollectionToDTO(namesakesRawData)
-	// fmt.Println("=========================")
-	// for _, itemNamesakes := range foldersRes {
-	// 	fmt.Printf("name: %s; namesakes: %v\n", itemNamesakes.Name, itemNamesakes.Namesakes)
-	// }
-	// fmt.Println("=========================")
-	bytes, err := formatter.MapToJson(foldersRes)
-	jsonPath := filepath.Join("data", "namesakes.json")
-	err = os.WriteFile(jsonPath, bytes.Bytes(), 0666)
+	namesakes := cloneSeeker.GetItemNamesakes()
+	file, err := os.OpenFile(filepath.Join("data", "namesakes.json"), os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	namesakesDTO := formatter.MapItemNamesakesToDTO(namesakes)
+	err = json.NewEncoder(file).Encode(namesakesDTO)
 	if err != nil {
 		panic(err)
 	}
 
-	// clones := cloneSeeker.GetItemClones()
-	// fmt.Println(clones)
+	clones := cloneSeeker.GetItemClones()
+	file, err = os.OpenFile(filepath.Join("data", "clones.json"), os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	clonesDTO := formatter.MapItemClonesToDTO(clones)
+	err = json.NewEncoder(file).Encode(clonesDTO)
+	if err != nil {
+		panic(err)
+	}
+
 }

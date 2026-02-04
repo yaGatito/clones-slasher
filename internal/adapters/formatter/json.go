@@ -1,15 +1,13 @@
 package formatter
 
 import (
-	"bytes"
 	"cloneslasher/internal/app"
 	"cloneslasher/internal/domain"
-	"encoding/json"
 )
 
 type ItemClonesDTO struct {
-	Item   ItemDTO  `json:"item"`
-	Clones []string `json:"clones"`
+	Item   ItemDTO   `json:"item"`
+	Clones []ItemDTO `json:"clones"`
 }
 
 type ItemNamesakesDTO struct {
@@ -26,7 +24,7 @@ type ItemDTO struct {
 	Content   []string `json:"contentPaths,omitempty"`
 }
 
-func MapCollectionToDTO(data []app.ItemNamesakes) []ItemNamesakesDTO {
+func MapItemNamesakesToDTO(data []app.ItemNamesakes) []ItemNamesakesDTO {
 	res := make([]ItemNamesakesDTO, len(data))
 
 	for i, itemNamesakes := range data {
@@ -39,6 +37,24 @@ func MapCollectionToDTO(data []app.ItemNamesakes) []ItemNamesakesDTO {
 		res[i] = ItemNamesakesDTO{
 			Name:      string(itemNamesakes.Name),
 			Namesakes: dtoNamesakes,
+		}
+	}
+	return res
+}
+
+func MapItemClonesToDTO(data []app.ItemClones) []ItemClonesDTO {
+	res := make([]ItemClonesDTO, len(data))
+
+	for i, itemClones := range data {
+		clonesDTO := make([]ItemDTO, len(itemClones.Clones))
+
+		for j, item := range itemClones.Clones {
+			clonesDTO[j] = MapToDTO(item)
+		}
+
+		res[i] = ItemClonesDTO{
+			Item:   MapToDTO(itemClones.Item),
+			Clones: clonesDTO,
 		}
 	}
 	return res
@@ -58,13 +74,4 @@ func MapToDTO(item domain.Item) ItemDTO {
 		IsFolder:  item.IsFolder,
 		Content:   contentIDs,
 	}
-}
-
-func MapToJson(data []ItemNamesakesDTO) (*bytes.Buffer, error) {
-	buffer := bytes.NewBuffer(make([]byte, 0))
-	err := json.NewEncoder(buffer).Encode(data)
-	if err != nil {
-		return nil, err
-	}
-	return buffer, nil
 }
