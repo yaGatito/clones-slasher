@@ -60,9 +60,9 @@ func (cs *CloneSeeker) GetFoldersNamesakes() map[string][]domain.Item {
 	var res map[string][]domain.Item = make(map[string][]domain.Item)
 
 	for _, name := range cs.folderRepo.GetNames() {
-		namesakes, err := cs.folderRepo.GetByName(name)
-		if err != nil {
-			panic(err)
+		namesakes, ok := cs.folderRepo.GetByName(name)
+		if !ok {
+			fmt.Println("didnt find folder namesakes")
 		}
 
 		if len(namesakes) > 1 {
@@ -73,27 +73,41 @@ func (cs *CloneSeeker) GetFoldersNamesakes() map[string][]domain.Item {
 	return res
 }
 
+// type ItemClones struct {
+// 	Path      string
+// 	Name      string
+// 	Size      int64
+// 	Extension string
+// 	IsFolder  bool
+// 	Content   []string
+// 	Clones    []string
+// }
+
 // TODO: fix the problem: create some struct here to output data. (ItemClones) and some field `clones []string`
-func (cs *CloneSeeker) GetExactSameFolderPaths() {
-	var res map[string][]domain.Item = make(map[string][]domain.Item)
+// func (cs *CloneSeeker) GetFolderClones() []ItemClones {
+// 	var res []ItemClones = make([]ItemClones, 0)
 
-	names := cs.folderRepo.GetNames()
-	for _, name := range names {
-		folders, err := cs.folderRepo.GetByName(name)
-		if err != nil {
-			panic(err)
-		}
+// 	names := cs.folderRepo.GetNames()
+// 	for _, name := range names {
+// 		folders, err := cs.folderRepo.GetByName(name)
+// 		if err != nil {
+// 			panic(err)
+// 		}
 
-		if len(folders) > 1 {
-			exactFoldersClones := findExactClones(folders...)
-			for path, clones := range exactFoldersClones {
-				cs.folderRepo.GetByPath(path)
-			}
-		}
-	}
+// 		if len(folders) > 1 {
+// 			exactFoldersClones := findExactClones(folders...)
+// 			for path, itemClones := range exactFoldersClones {
 
-	return res
-}
+// 				item, ok := cs.folderRepo.GetByPath(path)
+// 				if !ok {
+// 					fmt.Println("warning: didnt find item by path: " + path)
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return res
+// }
 
 func findExactClones(values ...domain.Item) map[string][]domain.Item {
 	res := make(map[string][]domain.Item)
@@ -141,9 +155,10 @@ func (cs *CloneSeeker) FileClones() map[string][]domain.Item {
 	keys := cs.fileRepo.GetNames()
 
 	for _, k := range keys {
-		files, err := cs.fileRepo.GetByName(k)
-		if err != nil {
-			panic(err)
+		files, ok := cs.fileRepo.GetByName(k)
+		if !ok {
+			fmt.Println("didnt find clones for file name:" + k)
+			continue
 		}
 		res[k] = files
 	}

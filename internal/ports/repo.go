@@ -4,8 +4,14 @@ import "cloneslasher/internal/domain"
 
 type ItemRepository interface {
 	AddItem(item domain.Item)
-	GetByName(key string) ([]domain.Item, error)
-	GetByPath(key string) ([]domain.Item, error)
+
+	// GetByName gets namesakes items by specified name.
+	GetByName(key string) ([]domain.Item, bool)
+
+	// GetByPath gets item by its path.
+	GetByPath(key string) (domain.Item, bool)
+
 	GetNames() []string
+
 	GetPaths() []string
 }

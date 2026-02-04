@@ -2,7 +2,7 @@ package storage
 
 import (
 	"cloneslasher/internal/domain"
-	"fmt"
+	"cloneslasher/internal/ports"
 	"sync"
 )
 
@@ -12,7 +12,6 @@ type Item struct {
 	Size      int64
 	Extension string
 	IsFolder  bool
-	Clones    []string
 }
 
 // ItemStorage name oriented memory storage.
@@ -23,7 +22,9 @@ type ItemStorage struct {
 	pathOrientedStore map[string]Item
 }
 
-func NewNameOrientedStorage() *ItemStorage {
+var _ ports.ItemRepository = (*ItemStorage)(nil)
+
+func NewItemStorage() *ItemStorage {
 	return &ItemStorage{
 		nameLoke:          sync.RWMutex{},
 		nameOrientedStore: make(map[string][]domain.Item),
@@ -52,27 +53,20 @@ func (is *ItemStorage) AddItem(item domain.Item) {
 	is.nameLoke.Unlock()
 }
 
-func (is *ItemStorage) GetByName(itemName string) ([]domain.Item, error) {
+func (is *ItemStorage) GetByName(itemName string) ([]domain.Item, bool) {
 	is.nameLoke.RLock()
 	defer is.nameLoke.RUnlock()
 
 	items, exists := is.nameOrientedStore[itemName]
-	if !exists {
-		return []domain.Item{}, fmt.Errorf("item not exists")
-	}
-	return items, nil
+	return items, exists
 }
 
-func (is *ItemStorage) GetByPath(itemPath string) (domain.Item, error) {
+func (is *ItemStorage) GetByPath(itemPath string) (domain.Item, bool) {
 	is.pathLoke.RLock()
 	defer is.pathLoke.RUnlock()
 
 	item, exists := is.pathOrientedStore[itemPath]
-	if !exists {
-		return domain.Item{}, fmt.Errorf("item not exists")
-	}
-
-	return mapItemToDomain(item), nil
+	return mapItemToDomain(item), exists
 }
 
 func (is *ItemStorage) GetNames() []string {

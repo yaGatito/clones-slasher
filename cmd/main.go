@@ -64,19 +64,5 @@ func run() {
 		panic(err)
 	}
 
-	clones := cloneSeeker.GetExactSameFolderPaths()
-
-	// file, err := os.OpenFile("C:\\Users\\jlazo\\GolandProjects\\clones-slasher\\data\\out.json", os.O_CREATE|os.O_RDWR, 0666)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// res := bytes.Bytes()
-	// fmt.Println(string(res))
-
-	// _, err = file.Write(res)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
+	// clones := cloneSeeker.GetFolderClones()
 }
