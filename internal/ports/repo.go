@@ -3,15 +3,19 @@ package ports
 import "cloneslasher/internal/domain"
 
 type ItemRepository interface {
-	AddItem(item domain.Item)
+	AddItem(item domain.Item) error
 
 	// GetByName gets namesakes items by specified name.
-	GetByName(key string) ([]domain.Item, bool)
+	GetByName(key domain.ItemName) ([]domain.Item, bool)
 
 	// GetByPath gets item by its path.
-	GetByPath(key string) (domain.Item, bool)
+	GetByID(key domain.ItemID) (domain.Item, bool)
 
-	GetNames() []string
+	GetNames() []domain.ItemName
 
-	GetPaths() []string
+	GetIDs() []domain.ItemID
+
+	DumpMap() map[domain.ItemID]domain.Item
+
+	DumpNamesakesMap() map[domain.ItemName][]domain.Item
 }

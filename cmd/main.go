@@ -2,51 +2,24 @@ package main
 
 import (
 	"cloneslasher/internal/adapters/formatter"
+	"cloneslasher/internal/adapters/handler"
 	storage "cloneslasher/internal/adapters/memstorage"
 	"cloneslasher/internal/app"
+	"encoding/json"
 	"os"
 	"path/filepath"
 )
 
 func main() {
 	run()
-	// arr := []domain.Item{
-	// 	domain.Item{
-	// 		Path:      "asdasd",
-	// 		Name:      "asdasasd",
-	// 		Size:      213,
-	// 		Extension: ".weqq",
-	// 		IsFolder:  false,
-	// 	},
-	// 	domain.Item{
-	// 		Path:      "asdasd",
-	// 		Name:      "123ew12ew",
-	// 		Size:      1231231,
-	// 		Extension: ".asd",
-	// 		IsFolder:  false,
-	// 	},
-	// 	domain.Item{
-	// 		Path:      "asdasd",
-	// 		Name:      "asdasasd",
-	// 		Size:      213,
-	// 		IsFolder:  true,
-	// 		Content: []domain.Item{
-	// 			domain.Item{
-	// 				Path: "asdasd",
-	// 				Name: "sdad",
-	// 			},
-	// 		},
-	// 	},
-	// }
-	// fmt.Println(arr[1:][0])
 }
 
 func run() {
-	fileStorage := storage.NewItemStorage()
-	folderStorage := storage.NewItemStorage()
-	cloneSeeker := app.NewCloneSeeker(fileStorage, folderStorage)
+	itemStorage := storage.NewItemStorage()
+	fileHandler := handler.NewFileHandler()
+	cloneSeeker := app.NewCloneSeeker(itemStorage, fileHandler)
 
-	path1 := filepath.Join("data", "test_2")
+	path1 := filepath.Join("data", "test_1")
 	path2 := filepath.Join("data", "test_2")
 	path3 := filepath.Join("data", "test_3")
 
@@ -55,14 +28,27 @@ func run() {
 		panic(err)
 	}
 
-	namesakesRawData := cloneSeeker.GetFoldersNamesakes()
-	foldersRes := formatter.MapCollectionToDTO(namesakesRawData)
-	bytes, err := formatter.MapToJson(foldersRes)
-	jsonPath := filepath.Join("data", "folder_namesakes.json")
-	err = os.WriteFile(jsonPath, bytes.Bytes(), 0666)
+	// TODO: Content formation!!! Then it needs to be able to count size!!! by size the equality
+	namesakes := cloneSeeker.GetItemNamesakes()
+	file, err := os.OpenFile(filepath.Join("data", "namesakes.json"), os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	namesakesDTO := formatter.MapItemNamesakesToDTO(namesakes)
+	err = json.NewEncoder(file).Encode(namesakesDTO)
 	if err != nil {
 		panic(err)
 	}
 
-	// clones := cloneSeeker.GetFolderClones()
+	clones := cloneSeeker.GetItemClones()
+	file, err = os.OpenFile(filepath.Join("data", "clones.json"), os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	clonesDTO := formatter.MapItemClonesToDTO(clones)
+	err = json.NewEncoder(file).Encode(clonesDTO)
+	if err != nil {
+		panic(err)
+	}
+
 }

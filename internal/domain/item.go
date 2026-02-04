@@ -1,42 +1,50 @@
 package domain
 
+type ItemID string
+
+type ItemName string
+
+type Comparer[T any] interface {
+	Equal(other T) bool
+}
+
 type Item struct {
-	Path      string
-	Name      string
+	ID        ItemID
+	Name      ItemName
 	Size      int64
 	Extension string
 	IsFolder  bool
-	Content   []Item
+	Content   []ItemID
 }
 
-func NewFile(path, name string, size int64, extension string) *Item {
-	return &Item{
-		Path:      path,
-		Name:      name,
-		Extension: extension,
-		IsFolder:  false,
-		Size:      size,
+func NewItem(id ItemID, name ItemName, extension string, isFolder bool, size int64) *Item {
+	if id == "" || name == "" {
+		panic("invalid item creation")
 	}
-}
-
-func NewFolder(path, name string, size int64, ptrs []Item) *Item {
-	return &Item{
-		Path:      path,
-		Name:      name,
-		Extension: "",
-		IsFolder:  true,
-		Size:      size,
-		Content:   ptrs,
+	item := Item{
+		ID:       id,
+		Name:     name,
+		IsFolder: isFolder,
+		Size:     size,
 	}
+	if isFolder {
+		item.Content = make([]ItemID, 0)
+	} else {
+		item.Extension = extension
+		item.Content = nil
+	}
+
+	return &item
 }
 
-func (i Item) Equals(other Item) bool {
-	return i.Name == other.Name && i.Size == other.Size &&
-		i.Extension == other.Extension && i.IsFolder == other.IsFolder
+func (i Item) Equal(other Item) bool {
+	return i.ID == other.ID && i.Same(other)
 }
 
 func (i Item) Same(other Item) bool {
-	return i.Name == other.Name
+	return i.Name == other.Name &&
+		i.Size == other.Size && i.Extension == other.Extension &&
+		i.IsFolder == other.IsFolder
 }
 
 func getNameFromPath(path string) string {
