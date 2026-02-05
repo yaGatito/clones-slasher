@@ -3,16 +3,17 @@ package formatter
 import (
 	"cloneslasher/internal/app"
 	"cloneslasher/internal/domain"
+	"cloneslasher/pkg/slicex"
 )
 
 type ItemClonesDTO struct {
-	Item   ItemDTO   `json:"item"`
-	Clones []ItemDTO `json:"clones"`
+	Item   ItemDTO  `json:"item"`
+	Clones []string `json:"clones"`
 }
 
 type ItemNamesakesDTO struct {
-	Name      string    `json:"name"`
-	Namesakes []ItemDTO `json:"namesakes"`
+	Name      string        `json:"name"`
+	Namesakes []NamesakeDTO `json:"namesakes"`
 }
 
 type ItemDTO struct {
@@ -24,46 +25,51 @@ type ItemDTO struct {
 	Content   []string `json:"contentPaths,omitempty"`
 }
 
-func MapItemNamesakesToDTO(data []app.ItemNamesakes) []ItemNamesakesDTO {
-	res := make([]ItemNamesakesDTO, len(data))
-
-	for i, itemNamesakes := range data {
-		dtoNamesakes := make([]ItemDTO, len(itemNamesakes.Namesakes))
-
-		for j, item := range itemNamesakes.Namesakes {
-			dtoNamesakes[j] = MapToDTO(item)
-		}
-
-		res[i] = ItemNamesakesDTO{
-			Name:      string(itemNamesakes.Name),
-			Namesakes: dtoNamesakes,
-		}
-	}
-	return res
+type NamesakeDTO struct {
+	Path      string   `json:"path"`
+	Size      int64    `json:"size"`
+	Extension string   `json:"ext,omitempty"`
+	Content   []string `json:"contentPaths,omitempty"`
 }
 
-func MapItemClonesToDTO(data []app.ItemClones) []ItemClonesDTO {
-	res := make([]ItemClonesDTO, len(data))
-
-	for i, itemClones := range data {
-		clonesDTO := make([]ItemDTO, len(itemClones.Clones))
-
-		for j, item := range itemClones.Clones {
-			clonesDTO[j] = MapToDTO(item)
-		}
-
-		res[i] = ItemClonesDTO{
-			Item:   MapToDTO(itemClones.Item),
-			Clones: clonesDTO,
-		}
+func MapItemNamesakesToDTO(data app.ItemNamesakes) ItemNamesakesDTO {
+	dtoNamesakes := slicex.Map(data.Namesakes, MapToNamesakeDTO)
+	return ItemNamesakesDTO{
+		Name:      string(data.Name),
+		Namesakes: dtoNamesakes,
 	}
-	return res
 }
 
-func MapToDTO(item domain.Item) ItemDTO {
-	contentIDs := make([]string, len(item.Content))
-	for i, it := range item.Content {
-		contentIDs[i] = string(it)
+func MapItemClonesToDTO(itemClones app.ItemClones) ItemClonesDTO {
+	clonesDTO := slicex.Map(itemClones.Clones, mapItemToString)
+	return ItemClonesDTO{
+		Item:   mapToItemDTO(itemClones.Item),
+		Clones: clonesDTO,
+	}
+}
+
+func MapToNamesakeDTO(item domain.Item) NamesakeDTO {
+	var contentIDs []string
+	if len(item.Content) > 0 {
+		contentIDs = slicex.Map(item.Content, mapItemIDToString)
+	} else {
+		contentIDs = nil
+	}
+
+	return NamesakeDTO{
+		Path:      string(item.ID),
+		Size:      item.Size,
+		Extension: item.Extension,
+		Content:   contentIDs,
+	}
+}
+
+func mapToItemDTO(item domain.Item) ItemDTO {
+	var contentIDs []string
+	if len(item.Content) > 0 {
+		contentIDs = slicex.Map(item.Content, mapItemIDToString)
+	} else {
+		contentIDs = nil
 	}
 
 	return ItemDTO{
@@ -74,4 +80,12 @@ func MapToDTO(item domain.Item) ItemDTO {
 		IsFolder:  item.IsFolder,
 		Content:   contentIDs,
 	}
+}
+
+func mapItemIDToString(itemID domain.ItemID) string {
+	return string(itemID)
+}
+
+func mapItemToString(item domain.Item) string {
+	return string(item.ID)
 }

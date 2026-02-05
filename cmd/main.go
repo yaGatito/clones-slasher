@@ -5,9 +5,12 @@ import (
 	"cloneslasher/internal/adapters/handler"
 	storage "cloneslasher/internal/adapters/memstorage"
 	"cloneslasher/internal/app"
+	"cloneslasher/pkg/slicex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func main() {
@@ -17,38 +20,35 @@ func main() {
 func run() {
 	itemStorage := storage.NewItemStorage()
 	fileHandler := handler.NewFileHandler()
+	fileHandler.AddHandleFunc(itemStorage.AddItem)
 	cloneSeeker := app.NewCloneSeeker(itemStorage, fileHandler)
 
 	path1 := filepath.Join("data", "test_1")
 	path2 := filepath.Join("data", "test_2")
 	path3 := filepath.Join("data", "test_3")
+	fileHandler.Process(path1, path2, path3)
 
-	err := cloneSeeker.Process(path1, path2, path3)
+	file, err := os.OpenFile(
+		filepath.Join("data", fmt.Sprintf(
+			"namesakes_%s.json",
+			time.Now().Format(time.DateOnly))),
+		os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
-
-	// TODO: Content formation!!! Then it needs to be able to count size!!! by size the equality
-	namesakes := cloneSeeker.GetItemNamesakes()
-	file, err := os.OpenFile(filepath.Join("data", "namesakes.json"), os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		panic(err)
-	}
-	namesakesDTO := formatter.MapItemNamesakesToDTO(namesakes)
+	namesakesDTO := slicex.Map(cloneSeeker.GetItemNamesakes(), formatter.MapItemNamesakesToDTO)
 	err = json.NewEncoder(file).Encode(namesakesDTO)
 	if err != nil {
 		panic(err)
 	}
 
-	clones := cloneSeeker.GetItemClones()
-	file, err = os.OpenFile(filepath.Join("data", "clones.json"), os.O_RDWR|os.O_CREATE, 0666)
+	file, err = os.OpenFile(filepath.Join("data", fmt.Sprintf("clones_%s.json", time.Now().Format(time.DateOnly))), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
-	clonesDTO := formatter.MapItemClonesToDTO(clones)
+	clonesDTO := slicex.Map(cloneSeeker.GetItemClones(), formatter.MapItemClonesToDTO)
 	err = json.NewEncoder(file).Encode(clonesDTO)
 	if err != nil {
 		panic(err)
 	}
-
 }

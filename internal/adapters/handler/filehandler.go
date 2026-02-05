@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-type FileHandleFunc func(item domain.Item)
+type FileHandleFunc func(ownerID domain.ItemID, item domain.Item)
 
 type FileHandler struct {
 	HandlerFuncs []FileHandleFunc
@@ -21,7 +21,7 @@ func NewFileHandler() *FileHandler {
 	}
 }
 
-func (h *FileHandler) AddHandleFunc(handleFunc func(item domain.Item)) {
+func (h *FileHandler) AddHandleFunc(handleFunc func(ownerID domain.ItemID, item domain.Item)) {
 	h.HandlerFuncs = append(h.HandlerFuncs, handleFunc)
 }
 
@@ -34,21 +34,8 @@ func (h *FileHandler) Process(paths ...string) error {
 					return errArg
 				}
 
-				// // Process the owner
-				// ownerID := domain.ItemID(filepath.Dir(pathArg))
-				// fmt.Printf("for %s path owner is %s", pathArg, ownerID)
-
-				// // Add item if not exists
-				// _, ok := cs.itemRepo.GetByID(ownerID)
-				// if !ok {
-				// 	stat, errArg := os.Stat(pathArg)
-				// 	if errArg != nil {
-				// 		fmt.Printf("error getting stat for directory %s: %v\n", pathArg, errArg)
-				// 		return errArg
-				// 	}
-				// 	ownerItem := domain.NewItem(domain.ItemID(pathArg), domain.ItemName(stat.Name()), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
-				// 	cs.itemRepo.AddItem(*ownerItem)
-				// }
+				// Process the owner
+				ownerID := domain.ItemID(filepath.Dir(pathArg))
 
 				// Process the item
 				stat, errArg := os.Stat(pathArg)
@@ -57,10 +44,9 @@ func (h *FileHandler) Process(paths ...string) error {
 					return errArg
 				}
 				item := domain.NewItem(domain.ItemID(pathArg), domain.ItemName(stat.Name()), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
-				// fmt.Printf("adding item %v\n", item)
 
-				for _, hFunc := range h.HandlerFuncs {
-					hFunc(*item)
+				for _, handleFunc := range h.HandlerFuncs {
+					handleFunc(ownerID, *item)
 				}
 
 				return errArg
