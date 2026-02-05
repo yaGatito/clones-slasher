@@ -28,16 +28,22 @@ func NewItemStorage() *ItemStorage {
 	}
 }
 
-func (s *ItemStorage) AddItem(item domain.Item) error {
+func (s *ItemStorage) AddItem(ownerID domain.ItemID, item domain.Item) {
+	owner, ok := s.GetByID(ownerID)
+	if !ok {
+		fmt.Println("failed to get owner item" + ownerID)
+	}
+	owner.Content = append(owner.Content, item.ID)
+	s.updateByID(owner)
+
 	err := s.addItem(item)
 	if err != nil {
-		return err
+		fmt.Println("add item:" + err.Error())
 	}
 	err = s.addItemToNamesakes(item)
 	if err != nil {
-		return err
+		fmt.Println("add item to namesakes:" + err.Error())
 	}
-	return nil
 }
 
 func (s *ItemStorage) addItem(item domain.Item) error {
@@ -87,6 +93,15 @@ func (s *ItemStorage) GetByID(id domain.ItemID) (domain.Item, bool) {
 	return item, ok
 }
 
+func (s *ItemStorage) updateByID(item domain.Item) bool {
+	_, ok := s.idOrientedStore[item.ID]
+	if !ok {
+		return false
+	}
+	s.idOrientedStore[item.ID] = item
+	return true
+}
+
 func (s *ItemStorage) GetNames() []domain.ItemName {
 	// s.clonesLoke.RLock()
 	// defer s.clonesLoke.RUnlock()
@@ -109,10 +124,10 @@ func (s *ItemStorage) GetIDs() []domain.ItemID {
 	return IDs
 }
 
-func (s *ItemStorage) DumpMap() map[domain.ItemID]domain.Item {
+func (s *ItemStorage) dumpMap() map[domain.ItemID]domain.Item {
 	return s.idOrientedStore
 }
 
-func (s *ItemStorage) DumpNamesakesMap() map[domain.ItemName][]domain.Item {
+func (s *ItemStorage) dumpNamesakesMap() map[domain.ItemName][]domain.Item {
 	return s.namesakesRelStore
 }
