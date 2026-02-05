@@ -1,47 +1,60 @@
 package domain
 
-type ItemID string
-
 type ItemName string
 
-type Comparer[T any] interface {
-	Equal(other T) bool
+type ItemID struct {
+	UniquePath string
+	Name       ItemName
+	Size       int64
+	Extension  string
+	IsFolder   bool
 }
 
 type Item struct {
-	ID        ItemID
-	Name      ItemName
-	Size      int64
-	Extension string
-	IsFolder  bool
-	Content   []ItemID
+	ItemID  ItemID
+	Content []ItemID
 }
 
-func NewItem(id ItemID, name ItemName, extension string, isFolder bool, size int64) *Item {
+// TODO: WHAT WILL BE IF TO CHANGE STRUCT KEY OF THE MAP AFTER IT WILL BE PASSED.
+func NewItem(id string, name string, extension string, isFolder bool, size int64) *Item {
 	if id == "" || name == "" {
 		panic("invalid item creation")
 	}
-	item := Item{
-		ID:       id,
-		Name:     name,
-		IsFolder: isFolder,
-		Size:     size,
+	itemID := ItemID{
+		UniquePath: id,
+		Name:       ItemName(name),
+		IsFolder:   isFolder,
+		Size:       size,
 	}
+	var content []ItemID
 	if isFolder {
-		item.Content = make([]ItemID, 0)
+		content = make([]ItemID, 0)
 	} else {
-		item.Extension = extension
-		item.Content = nil
+		content = nil
+
+		itemID.Extension = extension
 	}
 
-	return &item
+	return &Item{
+		ItemID:  itemID,
+		Content: content,
+	}
 }
 
 func (i Item) Equal(other Item) bool {
-	return i.ID == other.ID && i.Same(other)
+	return i.ItemID == other.ItemID
 }
 
 func (i Item) Same(other Item) bool {
+	return i.ItemID.Same(other.ItemID)
+}
+
+func (i ItemID) Same(other ItemID) bool {
+	// Important part. i and other shouldn't have the same UniquePath.
+	if i.UniquePath == other.UniquePath {
+		return false
+	}
+
 	return i.Name == other.Name &&
 		i.Size == other.Size && i.Extension == other.Extension &&
 		i.IsFolder == other.IsFolder

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-type FileHandleFunc func(ownerID domain.ItemID, item domain.Item)
+type FileHandleFunc func(ownerPath string, item domain.Item)
 
 type FileHandler struct {
 	HandlerFuncs []FileHandleFunc
@@ -21,7 +21,7 @@ func NewFileHandler() *FileHandler {
 	}
 }
 
-func (h *FileHandler) AddHandleFunc(handleFunc func(ownerID domain.ItemID, item domain.Item)) {
+func (h *FileHandler) AddHandleFunc(handleFunc func(ownerPath string, item domain.Item)) {
 	h.HandlerFuncs = append(h.HandlerFuncs, handleFunc)
 }
 
@@ -35,7 +35,7 @@ func (h *FileHandler) Process(paths ...string) error {
 				}
 
 				// Process the owner
-				ownerID := domain.ItemID(filepath.Dir(pathArg))
+				ownerID := filepath.Dir(pathArg)
 
 				// Process the item
 				stat, errArg := os.Stat(pathArg)
@@ -43,7 +43,7 @@ func (h *FileHandler) Process(paths ...string) error {
 					fmt.Printf("error getting stat for directory %s: %v\n", pathArg, errArg)
 					return errArg
 				}
-				item := domain.NewItem(domain.ItemID(pathArg), domain.ItemName(stat.Name()), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
+				item := domain.NewItem(pathArg, stat.Name(), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
 
 				for _, handleFunc := range h.HandlerFuncs {
 					handleFunc(ownerID, *item)

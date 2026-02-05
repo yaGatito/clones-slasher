@@ -13,7 +13,7 @@ type ItemStorage struct {
 	namesakesRelStore map[domain.ItemName][]domain.Item
 
 	// loke            sync.RWMutex
-	idOrientedStore map[domain.ItemID]domain.Item
+	idOrientedStore map[string]domain.Item
 }
 
 var _ ports.ItemRepository = (*ItemStorage)(nil)
@@ -24,16 +24,16 @@ func NewItemStorage() *ItemStorage {
 		namesakesRelStore: make(map[domain.ItemName][]domain.Item),
 
 		// loke:            sync.RWMutex{},
-		idOrientedStore: make(map[domain.ItemID]domain.Item),
+		idOrientedStore: make(map[string]domain.Item),
 	}
 }
 
-func (s *ItemStorage) AddItem(ownerID domain.ItemID, item domain.Item) {
-	owner, ok := s.GetByID(ownerID)
+func (s *ItemStorage) AddItem(ownerPath string, item domain.Item) {
+	owner, ok := s.GetByPath(ownerPath)
 	if !ok {
-		fmt.Println("failed to get owner item" + ownerID)
+		fmt.Println("failed to get owner item" + ownerPath)
 	}
-	owner.Content = append(owner.Content, item.ID)
+	owner.Content = append(owner.Content, item.ItemID)
 	s.updateByID(owner)
 
 	err := s.addItem(item)
@@ -48,11 +48,11 @@ func (s *ItemStorage) AddItem(ownerID domain.ItemID, item domain.Item) {
 
 func (s *ItemStorage) addItem(item domain.Item) error {
 	// s.loke.RLock()
-	existedItem, ok := s.idOrientedStore[item.ID]
+	existedItem, ok := s.idOrientedStore[item.ItemID.UniquePath]
 	if ok {
 		return fmt.Errorf("adding existed item %v", existedItem)
 	} else {
-		s.idOrientedStore[item.ID] = item
+		s.idOrientedStore[item.ItemID.UniquePath] = item
 	}
 	return nil
 	// s.loke.RUnlock()
@@ -60,18 +60,17 @@ func (s *ItemStorage) addItem(item domain.Item) error {
 
 func (s *ItemStorage) addItemToNamesakes(item domain.Item) error {
 	// s.clonesLoke.Lock()
-	namesakes, ok := s.namesakesRelStore[item.Name]
+	namesakes, ok := s.namesakesRelStore[item.ItemID.Name]
 	if ok {
-		ix := slices.IndexFunc(namesakes, item.Equal)
-		// fmt.Printf("ix: %d; item: %s; namesakes: %v\n", ix, item.ID, namesakes)
-		if ix > 0 {
-			return fmt.Errorf("failed to add existed namesake %v", namesakes[ix])
+		exist := slices.ContainsFunc(namesakes, item.Equal)
+		if exist {
+			return fmt.Errorf("failed to add existed namesake %v", item.ItemID.UniquePath)
 		} else {
-			s.namesakesRelStore[item.Name] = append(namesakes, item)
+			s.namesakesRelStore[item.ItemID.Name] = append(namesakes, item)
 		}
 	} else {
 		namesakes = make([]domain.Item, 0)
-		s.namesakesRelStore[item.Name] = namesakes
+		s.namesakesRelStore[item.ItemID.Name] = namesakes
 	}
 	return nil
 	// s.clonesLoke.Unlock()
@@ -85,7 +84,7 @@ func (s *ItemStorage) GetByName(itemName domain.ItemName) ([]domain.Item, bool) 
 	return items, exists
 }
 
-func (s *ItemStorage) GetByID(id domain.ItemID) (domain.Item, bool) {
+func (s *ItemStorage) GetByPath(id string) (domain.Item, bool) {
 	// s.loke.RLock()
 	// defer s.loke.RUnlock()
 
@@ -94,11 +93,11 @@ func (s *ItemStorage) GetByID(id domain.ItemID) (domain.Item, bool) {
 }
 
 func (s *ItemStorage) updateByID(item domain.Item) bool {
-	_, ok := s.idOrientedStore[item.ID]
+	_, ok := s.idOrientedStore[item.ItemID.UniquePath]
 	if !ok {
 		return false
 	}
-	s.idOrientedStore[item.ID] = item
+	s.idOrientedStore[item.ItemID.UniquePath] = item
 	return true
 }
 
@@ -118,13 +117,13 @@ func (s *ItemStorage) GetIDs() []domain.ItemID {
 	// defer s.clonesLoke.RUnlock()
 
 	var IDs []domain.ItemID
-	for ID := range s.idOrientedStore {
-		IDs = append(IDs, ID)
+	for _, ID := range s.idOrientedStore {
+		IDs = append(IDs, ID.ItemID)
 	}
 	return IDs
 }
 
-func (s *ItemStorage) dumpMap() map[domain.ItemID]domain.Item {
+func (s *ItemStorage) dumpMap() map[string]domain.Item {
 	return s.idOrientedStore
 }
 
