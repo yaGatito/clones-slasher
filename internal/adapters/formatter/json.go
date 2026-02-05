@@ -33,7 +33,7 @@ type NamesakeDTO struct {
 }
 
 func MapItemNamesakesToDTO(data app.ItemNamesakes) ItemNamesakesDTO {
-	dtoNamesakes := slicex.Map(data.Namesakes, MapToNamesakeDTO)
+	dtoNamesakes := slicex.Map(data.Namesakes, mapToNamesakeDTO)
 	return ItemNamesakesDTO{
 		Name:      string(data.Name),
 		Namesakes: dtoNamesakes,
@@ -41,14 +41,14 @@ func MapItemNamesakesToDTO(data app.ItemNamesakes) ItemNamesakesDTO {
 }
 
 func MapItemClonesToDTO(itemClones app.ItemClones) ItemClonesDTO {
-	clonesDTO := slicex.Map(itemClones.Clones, mapItemToString)
+	clonesPaths := slicex.Map(itemClones.Clones, mapItemToString)
 	return ItemClonesDTO{
 		Item:   mapToItemDTO(itemClones.Item),
-		Clones: clonesDTO,
+		Clones: clonesPaths,
 	}
 }
 
-func MapToNamesakeDTO(item domain.Item) NamesakeDTO {
+func mapToNamesakeDTO(item domain.Item) NamesakeDTO {
 	var contentIDs []string
 	if len(item.Content) > 0 {
 		contentIDs = slicex.Map(item.Content, mapItemIDToString)
@@ -57,9 +57,9 @@ func MapToNamesakeDTO(item domain.Item) NamesakeDTO {
 	}
 
 	return NamesakeDTO{
-		Path:      string(item.ID),
-		Size:      item.Size,
-		Extension: item.Extension,
+		Path:      item.ItemID.UniquePath,
+		Size:      item.ItemID.Size,
+		Extension: item.ItemID.Extension,
 		Content:   contentIDs,
 	}
 }
@@ -73,19 +73,19 @@ func mapToItemDTO(item domain.Item) ItemDTO {
 	}
 
 	return ItemDTO{
-		Path:      string(item.ID),
-		Name:      string(item.Name),
-		Size:      item.Size,
-		Extension: item.Extension,
-		IsFolder:  item.IsFolder,
+		Path:      string(item.ItemID.UniquePath),
+		Name:      string(item.ItemID.Name),
+		Size:      item.ItemID.Size,
+		Extension: item.ItemID.Extension,
+		IsFolder:  item.ItemID.IsFolder,
 		Content:   contentIDs,
 	}
 }
 
 func mapItemIDToString(itemID domain.ItemID) string {
-	return string(itemID)
+	return itemID.UniquePath
 }
 
 func mapItemToString(item domain.Item) string {
-	return string(item.ID)
+	return item.ItemID.UniquePath
 }
