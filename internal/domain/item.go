@@ -45,11 +45,11 @@ func (i Item) Equal(other Item) bool {
 	return i.ItemID == other.ItemID
 }
 
-func (i Item) Same(other Item) bool {
-	return i.ItemID.Same(other.ItemID)
+func (i Item) IsClone(other Item) bool {
+	return i.ItemID.IsClone(other.ItemID)
 }
 
-func (i ItemID) Same(other ItemID) bool {
+func (i ItemID) IsClone(other ItemID) bool {
 	// Important part. i and other shouldn't have the same UniquePath.
 	if i.UniquePath == other.UniquePath {
 		return false

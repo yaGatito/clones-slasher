@@ -85,13 +85,13 @@ func findClones(items ...domain.Item) map[domain.ItemID][]domain.Item {
 	var target domain.Item
 	for j, item := range items {
 		target = item
-		exist := slices.ContainsFunc(slices.Collect(maps.Keys(res)), target.ItemID.Same)
+		exist := slices.ContainsFunc(slices.Collect(maps.Keys(res)), target.ItemID.IsClone)
 		if exist {
 			continue
 		}
 
-		sameItems := slicex.Filter(items[j:], target.Same)
-		res[target.ItemID] = sameItems
+		clones := slicex.Filter(items[j:], target.IsClone)
+		res[target.ItemID] = clones
 	}
 
 	return res
