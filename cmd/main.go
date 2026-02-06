@@ -7,10 +7,8 @@ import (
 	"cloneslasher/internal/app"
 	"cloneslasher/pkg/slicex"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 func main() {
@@ -28,11 +26,7 @@ func run() {
 	path3 := filepath.Join("data", "test_3")
 	fileHandler.Process(path1, path2, path3)
 
-	file, err := os.OpenFile(
-		filepath.Join("data", fmt.Sprintf(
-			"namesakes_%s.json",
-			time.Now().Format(time.DateOnly))),
-		os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filepath.Join("data", "namesakes.json"), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +36,7 @@ func run() {
 		panic(err)
 	}
 
-	file, err = os.OpenFile(filepath.Join("data", fmt.Sprintf("clones_%s.json", time.Now().Format(time.DateOnly))), os.O_RDWR|os.O_CREATE, 0666)
+	file, err = os.OpenFile(filepath.Join("data", "clones.json"), os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
