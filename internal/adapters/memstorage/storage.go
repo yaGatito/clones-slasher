@@ -70,6 +70,7 @@ func (s *ItemStorage) addItemToNamesakes(item domain.Item) error {
 		}
 	} else {
 		namesakes = make([]domain.Item, 0)
+		namesakes = append(namesakes, item)
 		s.namesakesRelStore[item.ItemID.Name] = namesakes
 	}
 	return nil
