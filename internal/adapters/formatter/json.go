@@ -3,7 +3,8 @@ package formatter
 import (
 	"cloneslasher/internal/app"
 	"cloneslasher/internal/domain"
-	"cloneslasher/pkg/slicex"
+
+	"github.com/yaGatito/slicex"
 )
 
 type ItemClonesDTO struct {

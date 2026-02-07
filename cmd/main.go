@@ -5,10 +5,11 @@ import (
 	"cloneslasher/internal/adapters/handler"
 	storage "cloneslasher/internal/adapters/memstorage"
 	"cloneslasher/internal/app"
-	"cloneslasher/pkg/slicex"
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/yaGatito/slicex"
 )
 
 func main() {

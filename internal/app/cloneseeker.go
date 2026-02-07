@@ -4,10 +4,11 @@ import (
 	"cloneslasher/internal/adapters/handler"
 	"cloneslasher/internal/domain"
 	"cloneslasher/internal/ports"
-	"cloneslasher/pkg/slicex"
 	"fmt"
 	"maps"
 	"slices"
+
+	"github.com/yaGatito/slicex"
 )
 
 type ItemNamesakes struct {
