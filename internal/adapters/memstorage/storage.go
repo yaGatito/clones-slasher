@@ -123,11 +123,3 @@ func (s *ItemStorage) GetIDs() []domain.ItemID {
 	}
 	return IDs
 }
-
-func (s *ItemStorage) dumpMap() map[string]domain.Item {
-	return s.idOrientedStore
-}
-
-func (s *ItemStorage) dumpNamesakesMap() map[domain.ItemName][]domain.Item {
-	return s.namesakesRelStore
-}

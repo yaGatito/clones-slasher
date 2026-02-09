@@ -1,5 +1,15 @@
 package domain
 
+type ItemNamesakes struct {
+	Name      ItemName
+	Namesakes []Item
+}
+
+type ItemClones struct {
+	Item   Item
+	Clones []Item
+}
+
 type ItemName string
 
 type ItemID struct {
@@ -58,15 +68,4 @@ func (i ItemID) IsClone(other ItemID) bool {
 	return i.Name == other.Name &&
 		i.Size == other.Size && i.Extension == other.Extension &&
 		i.IsFolder == other.IsFolder
-}
-
-func getNameFromPath(path string) string {
-	lastSlash := -1
-	for i := len(path) - 1; i >= 0; i-- {
-		if path[i] == '/' || path[i] == '\\' {
-			lastSlash = i
-			break
-		}
-	}
-	return path[lastSlash+1:]
 }
