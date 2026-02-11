@@ -14,7 +14,7 @@ type Command struct {
 const (
 	WatchClones    string = "-c"
 	WatchNamesakes string = "-n"
-	Paths          string = "-p"
+	Paths          string = "-p" // Multiple path support
 	Output         string = "-o"
 )
 
@@ -57,6 +57,5 @@ func ParseArgs(args []string) Command {
 		}
 	}
 
-	fmt.Println(cmd)
 	return cmd
 }
