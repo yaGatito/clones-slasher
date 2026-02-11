@@ -2,10 +2,9 @@ package handler
 
 import (
 	"cloneslasher/internal/domain"
+	"errors"
 	"fmt"
 	"io/fs"
-	"log"
-	"os"
 	"path/filepath"
 )
 
@@ -25,35 +24,37 @@ func (h *FileHandler) AddHandleFunc(handleFunc func(ownerPath string, item domai
 	h.handlerFuncs = append(h.handlerFuncs, handleFunc)
 }
 
-func (h *FileHandler) Process(paths []string) error {
-	for _, path := range paths {
-		err := filepath.WalkDir(path,
-			func(pathArg string, dirArg fs.DirEntry, errArg error) error {
+func (h *FileHandler) Process(roots []string) error {
+	for _, root := range roots {
+		err := filepath.WalkDir(root,
+			func(pathArg string, dirEntryArg fs.DirEntry, errArg error) error {
 				if errArg != nil {
-					fmt.Printf("preventing walk through %s: %v\n", pathArg, errArg)
-					return errArg
+					if errors.Is(errArg, fs.ErrPermission) {
+						return fs.SkipDir
+					} else {
+						fmt.Printf("warning: preventing walk through %s: %v\n", pathArg, errArg)
+						return nil
+					}
 				}
 
 				// Process the owner
-				ownerID := filepath.Dir(pathArg)
+				ownerPath := filepath.Dir(pathArg)
+
+				stat, err := dirEntryArg.Info()
+				if err != nil {
+					return nil
+				}
 
 				// Process the item
-				stat, errArg := os.Stat(pathArg)
-				if errArg != nil {
-					fmt.Printf("error getting stat for directory %s: %v\n", pathArg, errArg)
-					return errArg
-				}
 				item := domain.NewItem(pathArg, stat.Name(), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
-
 				for _, handleFunc := range h.handlerFuncs {
-					handleFunc(ownerID, *item)
+					handleFunc(ownerPath, *item)
 				}
 
-				return errArg
+				return nil
 			})
 
 		if err != nil {
-			log.Fatalf("error walking the path %s: %v\n", path, err)
 			return err
 		}
 
