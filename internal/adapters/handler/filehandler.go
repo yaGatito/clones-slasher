@@ -12,20 +12,20 @@ import (
 type FileHandleFunc func(ownerPath string, item domain.Item)
 
 type FileHandler struct {
-	HandlerFuncs []FileHandleFunc
+	handlerFuncs []FileHandleFunc
 }
 
 func NewFileHandler() *FileHandler {
 	return &FileHandler{
-		HandlerFuncs: make([]FileHandleFunc, 0),
+		handlerFuncs: make([]FileHandleFunc, 0),
 	}
 }
 
 func (h *FileHandler) AddHandleFunc(handleFunc func(ownerPath string, item domain.Item)) {
-	h.HandlerFuncs = append(h.HandlerFuncs, handleFunc)
+	h.handlerFuncs = append(h.handlerFuncs, handleFunc)
 }
 
-func (h *FileHandler) Process(paths ...string) error {
+func (h *FileHandler) Process(paths []string) error {
 	for _, path := range paths {
 		err := filepath.WalkDir(path,
 			func(pathArg string, dirArg fs.DirEntry, errArg error) error {
@@ -45,7 +45,7 @@ func (h *FileHandler) Process(paths ...string) error {
 				}
 				item := domain.NewItem(pathArg, stat.Name(), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
 
-				for _, handleFunc := range h.HandlerFuncs {
+				for _, handleFunc := range h.handlerFuncs {
 					handleFunc(ownerID, *item)
 				}
 
