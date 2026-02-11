@@ -25,30 +25,26 @@ type Item struct {
 	Content []ItemID
 }
 
-// TODO: WHAT WILL BE IF TO CHANGE STRUCT KEY OF THE MAP AFTER IT WILL BE PASSED.
+// TODO: WHAT WILL BE IF CHANGE STRUCT KEY OF THE MAP AFTER IT WAS PASSED IN MAP.
 func NewItem(id string, name string, extension string, isFolder bool, size int64) *Item {
 	if id == "" || name == "" {
 		panic("invalid item creation")
 	}
-	itemID := ItemID{
-		UniquePath: id,
-		Name:       ItemName(name),
-		IsFolder:   isFolder,
-		Size:       size,
+	item := Item{
+		ItemID:  ItemID{
+			UniquePath: id,
+			Name:       ItemName(name),
+			IsFolder:   isFolder,
+			Size:       size,
+		},
 	}
-	var content []ItemID
 	if isFolder {
-		content = make([]ItemID, 0)
+		item.Content = make([]ItemID, 0)
 	} else {
-		content = nil
-
-		itemID.Extension = extension
+		item.ItemID.Extension = extension
 	}
 
-	return &Item{
-		ItemID:  itemID,
-		Content: content,
-	}
+	return &item
 }
 
 func (i Item) Equal(other Item) bool {
