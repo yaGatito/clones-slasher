@@ -38,7 +38,7 @@ func (h *FileHandler) Process(roots []string) error {
 				}
 
 				// Process the owner
-				ownerPath := filepath.Dir(pathArg)
+				parentPath := filepath.Dir(pathArg)
 
 				stat, err := dirEntryArg.Info()
 				if err != nil {
@@ -46,9 +46,15 @@ func (h *FileHandler) Process(roots []string) error {
 				}
 
 				// Process the item
-				item := domain.NewItem(pathArg, stat.Name(), filepath.Ext(pathArg), stat.IsDir(), stat.Size())
+				item := domain.NewItem(
+					pathArg,
+					stat.Name(),
+					filepath.Ext(pathArg),
+					stat.IsDir(),
+					stat.Size())
+
 				for _, handleFunc := range h.handlerFuncs {
-					handleFunc(ownerPath, *item)
+					handleFunc(parentPath, *item)
 				}
 
 				return nil
