@@ -1,7 +1,6 @@
 package formatter
 
 import (
-	"cloneslasher/internal/app"
 	"cloneslasher/internal/domain"
 
 	"github.com/yaGatito/slicex"
@@ -33,7 +32,7 @@ type NamesakeDTO struct {
 	Content   []string `json:"contentPaths,omitempty"`
 }
 
-func MapItemNamesakesToDTO(data app.ItemNamesakes) ItemNamesakesDTO {
+func MapItemNamesakesToDTO(data domain.ItemNamesakes) ItemNamesakesDTO {
 	dtoNamesakes := slicex.Map(data.Namesakes, mapToNamesakeDTO)
 	return ItemNamesakesDTO{
 		Name:      string(data.Name),
@@ -41,7 +40,7 @@ func MapItemNamesakesToDTO(data app.ItemNamesakes) ItemNamesakesDTO {
 	}
 }
 
-func MapItemClonesToDTO(itemClones app.ItemClones) ItemClonesDTO {
+func MapItemClonesToDTO(itemClones domain.ItemClones) ItemClonesDTO {
 	clonesPaths := slicex.Map(itemClones.Clones, mapItemToString)
 	return ItemClonesDTO{
 		Item:   mapToItemDTO(itemClones.Item),
